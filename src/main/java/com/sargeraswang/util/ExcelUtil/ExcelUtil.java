@@ -6,6 +6,7 @@ import org.apache.commons.collections.ComparatorUtils;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.collections.comparators.ComparatorChain;
 import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.slf4j.Logger;
@@ -151,9 +152,9 @@ public class ExcelUtil {
         // 声明一个工作薄
         HSSFWorkbook workbook = new HSSFWorkbook();
         // 生成一个表格
-        HSSFSheet sheet = workbook.createSheet();
+//        HSSFSheet sheet = workbook.createSheet();
 
-        write2Sheet(sheet, headers, dataset, pattern);
+        write2SheetMy(workbook, headers, dataset, pattern);
         try {
             workbook.write(out);
         } catch (IOException e) {
@@ -246,12 +247,22 @@ public class ExcelUtil {
      * @param dataset 数据集合
      * @param pattern 日期格式
      */
-    private static <T> void write2Sheet(HSSFSheet sheet, Map<String,String> headers, Collection<T> dataset,
+    private static <T> void write2SheetMy(HSSFWorkbook workbook, Map<String,String> headers, Collection<T> dataset,
                                         String pattern) {
         //时间格式默认"yyyy-MM-dd"
         if (isBlank(pattern)){
-            pattern = "yyyy-MM-dd";
+            pattern = "yyyy/MM/dd";
         }
+        HSSFSheet sheet = workbook.createSheet();
+        //设置列宽
+        sheet.setColumnWidth(0, 40*256);
+        sheet.setColumnWidth(1, 20*256);
+        sheet.setColumnWidth(2, 20*256);
+        sheet.setColumnWidth(3, 20*256);
+        sheet.setColumnWidth(4, 20*256);
+        sheet.setColumnWidth(5, 20*256);
+        sheet.setColumnWidth(6, 40*256);
+      //---------------标题格式设置-------------------
         // 产生表格标题行
         HSSFRow row = sheet.createRow(0);
         // 标题行转中文
@@ -259,19 +270,87 @@ public class ExcelUtil {
         Iterator<String> it1 = keys.iterator();
         String key = "";    //存放临时键变量
         int c= 0;   //标题列数
+        HSSFPalette palette = workbook.getCustomPalette();//取色板
+        //标题背景色
+        CellStyle cellStyleTitle=workbook.createCellStyle();
+        cellStyleTitle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        HSSFColor hssfColor = palette.findSimilarColor(204, 255, 204);
+        cellStyleTitle.setFillForegroundColor(hssfColor.getIndex());
+        //标题边框
+        cellStyleTitle.setBorderBottom(BorderStyle.THIN); //下边框
+        cellStyleTitle.setBorderLeft(BorderStyle.THIN);//左边框
+        cellStyleTitle.setBorderTop(BorderStyle.THIN);//上边框
+        cellStyleTitle.setBorderRight(BorderStyle.THIN);//右边框
+
+        HSSFFont fontTitle = workbook.createFont();
+        fontTitle.setFontName("宋体");//设置字体名称
+        fontTitle.setFontHeightInPoints((short)15);//设置字号
+        fontTitle.setItalic(false);//设置是否为斜体
+        fontTitle.setBold(true);//设置是否加粗
+        fontTitle.setColor(IndexedColors.BLACK.index);//设置字体颜色
+        cellStyleTitle.setFont(fontTitle);
+        //设置标题垂直居中
+        cellStyleTitle.setVerticalAlignment(VerticalAlignment.CENTER);
+        //设置水平居中
+        cellStyleTitle.setAlignment(HorizontalAlignment.CENTER);
+        row.setHeightInPoints(30);//设置行的高度
+        //---------------标题格式设置-------------------
         while (it1.hasNext()){
             key = it1.next();
             if (headers.containsKey(key)) {
                 HSSFCell cell = row.createCell(c);
+                cell.setCellStyle(cellStyleTitle);
                 HSSFRichTextString text = new HSSFRichTextString(headers.get(key));
                 cell.setCellValue(text);
                 c++;
             }
         }
 
+		//---------------内容格式设置-------------------
+		CellStyle cellStyleContent=workbook.createCellStyle();
+		cellStyleContent.setVerticalAlignment(VerticalAlignment.CENTER);//设置垂直居中
+		cellStyleContent.setAlignment(HorizontalAlignment.CENTER);//设置水平居中
+		//内容边框
+		cellStyleContent.setBorderBottom(BorderStyle.THIN); //下边框
+		cellStyleContent.setBorderLeft(BorderStyle.THIN);//左边框
+		cellStyleContent.setBorderTop(BorderStyle.THIN);//上边框
+		cellStyleContent.setBorderRight(BorderStyle.THIN);//右边框
+		//内容字体
+		HSSFFont fontContent = workbook.createFont();
+		fontContent.setFontName("宋体");//设置字体名称
+		fontContent.setFontHeightInPoints((short)10);//设置字号
+		fontContent.setItalic(false);//设置是否为斜体
+		fontContent.setBold(false);//设置是否加粗
+		fontContent.setColor(IndexedColors.BLACK.index);//设置字体颜色
+		cellStyleContent.setFont(fontContent);
+		//设置换行
+		cellStyleContent.setWrapText(true);
+		
+		CellStyle cellStyleContentPrice=workbook.createCellStyle();
+		cellStyleContentPrice.setVerticalAlignment(VerticalAlignment.CENTER);//设置垂直居中
+		cellStyleContentPrice.setAlignment(HorizontalAlignment.CENTER);//设置水平居中
+		//内容边框
+		cellStyleContentPrice.setBorderBottom(BorderStyle.THIN); //下边框
+		cellStyleContentPrice.setBorderLeft(BorderStyle.THIN);//左边框
+		cellStyleContentPrice.setBorderTop(BorderStyle.THIN);//上边框
+		cellStyleContentPrice.setBorderRight(BorderStyle.THIN);//右边框
+		//内容字体价格的
+		HSSFFont fontContentPrice = workbook.createFont();
+		fontContentPrice.setFontName("宋体");//设置字体名称
+		fontContentPrice.setFontHeightInPoints((short)15);//设置字号
+		fontContentPrice.setItalic(false);//设置是否为斜体
+		fontContentPrice.setBold(true);//设置是否加粗
+		fontContentPrice.setColor(IndexedColors.RED.index);//设置字体颜色
+		cellStyleContentPrice.setFont(fontContentPrice);
+		//设置换行
+		cellStyleContentPrice.setWrapText(true); 
+		//---------------内容格式设置-------------------
+        
+        
         // 遍历集合数据，产生数据行
         Iterator<T> it = dataset.iterator();
         int index = 0;
+        List<Integer> indexList = Arrays.asList(2,3,4,5);//2,3,4,5是价格，样式不一样
         while (it.hasNext()) {
             index++;
             row = sheet.createRow(index);
@@ -291,9 +370,13 @@ public class ExcelUtil {
                         }
                         Object value = map.get(key);
                         HSSFCell cell = row.createCell(cellNum);
-
+                        //设置内容样式
+                        if(indexList.contains(cellNum)) {
+                        	cell.setCellStyle(cellStyleContentPrice);
+                        }else{
+                        	cell.setCellStyle(cellStyleContent);
+                        }
                         cellNum = setCellValue(cell,value,pattern,cellNum,null,row);
-
                         cellNum++;
                     }
                 } else {
@@ -301,12 +384,16 @@ public class ExcelUtil {
                     int cellNum = 0;
                     for (int i = 0; i < fields.size(); i++) {
                         HSSFCell cell = row.createCell(cellNum);
+                        //设置内容样式
+                        if(indexList.contains(cellNum)) {
+                        	cell.setCellStyle(cellStyleContentPrice);
+                        }else{
+                        	cell.setCellStyle(cellStyleContent);
+                        }
                         Field field = fields.get(i).getField();
                         field.setAccessible(true);
                         Object value = field.get(t);
-
                         cellNum = setCellValue(cell,value,pattern,cellNum,field,row);
-
                         cellNum++;
                     }
                 }
@@ -314,12 +401,93 @@ public class ExcelUtil {
                 LG.error(e.toString(), e);
             }
         }
-        // 设定自动宽度
-        for (int i = 0; i < headers.size(); i++) {
-            sheet.autoSizeColumn(i);
-        }
+//        // 设定自动宽度
+//        for (int i = 0; i < headers.size(); i++) {
+//            sheet.autoSizeColumn(i);
+//        }
     }
 
+    /**
+     * 每个sheet的写入
+     *
+     * @param sheet   页签
+     * @param headers 表头
+     * @param dataset 数据集合
+     * @param pattern 日期格式
+     */
+    private static <T> void write2Sheet(HSSFSheet sheet, Map<String,String> headers, Collection<T> dataset,
+    		String pattern) {
+    	//时间格式默认"yyyy-MM-dd"
+    	if (isBlank(pattern)){
+    		pattern = "yyyy-MM-dd";
+    	}
+    	// 产生表格标题行
+    	HSSFRow row = sheet.createRow(0);
+    	// 标题行转中文
+    	Set<String> keys = headers.keySet();
+    	Iterator<String> it1 = keys.iterator();
+    	String key = "";    //存放临时键变量
+    	int c= 0;   //标题列数
+    	while (it1.hasNext()){
+    		key = it1.next();
+    		if (headers.containsKey(key)) {
+    			HSSFCell cell = row.createCell(c);
+    			HSSFRichTextString text = new HSSFRichTextString(headers.get(key));
+    			cell.setCellValue(text);
+    			c++;
+    		}
+    	}
+    	
+    	// 遍历集合数据，产生数据行
+    	Iterator<T> it = dataset.iterator();
+    	int index = 0;
+    	while (it.hasNext()) {
+    		index++;
+    		row = sheet.createRow(index);
+    		T t = it.next();
+    		try {
+    			if (t instanceof Map) {
+    				@SuppressWarnings("unchecked")
+    				Map<String, Object> map = (Map<String, Object>) t;
+    				int cellNum = 0;
+    				//遍历列名
+    				Iterator<String> it2 = keys.iterator();
+    				while (it2.hasNext()){
+    					key = it2.next();
+    					if (!headers.containsKey(key)) {
+    						LG.error("Map 中 不存在 key [" + key + "]");
+    						continue;
+    					}
+    					Object value = map.get(key);
+    					HSSFCell cell = row.createCell(cellNum);
+    					
+    					cellNum = setCellValue(cell,value,pattern,cellNum,null,row);
+    					
+    					cellNum++;
+    				}
+    			} else {
+    				List<FieldForSortting> fields = sortFieldByAnno(t.getClass());
+    				int cellNum = 0;
+    				for (int i = 0; i < fields.size(); i++) {
+    					HSSFCell cell = row.createCell(cellNum);
+    					Field field = fields.get(i).getField();
+    					field.setAccessible(true);
+    					Object value = field.get(t);
+    					
+    					cellNum = setCellValue(cell,value,pattern,cellNum,field,row);
+    					
+    					cellNum++;
+    				}
+    			}
+    		} catch (Exception e) {
+    			LG.error(e.toString(), e);
+    		}
+    	}
+    	// 设定自动宽度
+    	for (int i = 0; i < headers.size(); i++) {
+    		sheet.autoSizeColumn(i);
+    	}
+    }
     private static int setCellValue(HSSFCell cell,Object value,String pattern,int cellNum,Field field,HSSFRow row){
         String textValue = null;
         if (value instanceof Integer) {
